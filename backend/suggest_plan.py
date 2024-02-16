@@ -2,48 +2,59 @@ import yfinance as yf
 import numpy as np
 import pandas as pd
 
-# Initial setup: stocks, weights, and total investment
-stocks = ['AAPL', 'MSFT', 'AMZN', 'GOOGL', 'META']
-initial_weights = np.array([0.2, 0.2, 0.2, 0.2, 0.2])
-total_investment = 10000
+# Define a simplified list of stock symbols (representing a portion of an index)
+stocks = ['AAPL', 'MSFT', 'AMZN', 'GOOGL', 'TSLA']
+exclusions = ['TSLA']  # Exclude specific stocks for customization (e.g., sustainability)
 
-# Mock purchase prices for simplicity. In a real scenario, you'd have actual purchase data.
-purchase_prices = {'AAPL': 150, 'MSFT': 250, 'AMZN': 3100, 'GOOGL': 2800, 'META': 350}
-purchase_quantities = {'AAPL': 10, 'MSFT': 8, 'AMZN': 2, 'GOOGL': 2, 'META': 5}
+# Apply exclusions
+stocks = [stock for stock in stocks if stock not in exclusions]
 
-# Define a loss threshold (e.g., -10%)
-loss_threshold = -0.10
+# Define an initial portfolio (stock symbol: quantity)
+portfolio = {'AAPL': 10, 'MSFT': 8, 'AMZN': 2}  # Example: pre-existing portfolio
 
-# Fetch current stock prices
-data = yf.download(stocks, period="1d")['Close'].iloc[-1]
+# Fetch historical data for the stocks
+start_date = "2023-01-01"
+end_date = "2023-12-31"
+data = yf.download(stocks, start=start_date, end=end_date)['Close']
 
-# Recommendations
-buy_recommendations = []
-sell_recommendations = []
+# Ensure all data is fetched; if any stock has missing data, it's dropped
+data = data.dropna(axis=1)
 
-# Calculate current value and losses
+# Filter portfolio to include only stocks present in the data
+portfolio_filtered = {stock: portfolio[stock] for stock in portfolio if stock in data.columns}
+
+# Convert the filtered portfolio to a Series aligned with the data columns
+portfolio_series = pd.Series(portfolio_filtered).reindex(data.columns, fill_value=0)
+
+# Calculate daily returns for the portfolio and the index
+portfolio_returns = data.pct_change().fillna(0).dot(portfolio_series)
+index_returns = data.pct_change().mean(axis=1)  # Simulated index returns as average returns of constituents
+
+# Calculate the correlation between portfolio and index returns
+correlation = portfolio_returns.corr(index_returns)
+print(f"Correlation with the index: {correlation:.2f}")
+
+# Define a loss threshold for making sell recommendations
+loss_threshold = -0.10  # -10%
+
+# Fetch current stock prices for buy/sell decisions
+current_prices = yf.download(stocks, period="1d")['Close'].iloc[-1]
+
+# Determine buy and sell recommendations
+recommendations = []
+
 for stock in stocks:
-    current_price = data[stock]
-    purchase_price = purchase_prices[stock]
-    quantity = purchase_quantities[stock]
-    current_value = current_price * quantity
-    purchase_value = purchase_price * quantity
-    loss_percentage = (current_price - purchase_price) / purchase_price
+    if stock in portfolio:
+        purchase_price = data.iloc[0][stock]  # Assume purchase at the start date for simplicity
+        current_price = current_prices[stock]
+        loss = (current_price - purchase_price) / purchase_price
 
-    # Make sell recommendations based on the loss threshold
-    if loss_percentage < loss_threshold:
-        sell_recommendations.append((stock, "SELL", quantity, f"Loss: {loss_percentage*100:.2f}%"))
+        if loss < loss_threshold:
+            recommendations.append((stock, 'SELL', portfolio[stock], f"Loss: {loss*100:.2f}%"))
     else:
-        # Make buy recommendations based on the risk-adjusted weights (for simplicity, assuming more investment)
-        # In a real application, you'd also consider the available budget, investment strategy adjustments, etc.
-        buy_recommendations.append((stock, "BUY", f"Current Loss/Gain: {loss_percentage*100:.2f}%"))
+        recommendations.append((stock, 'BUY', 'N/A', 'Not in portfolio'))
 
-# Print recommendations
-print("Sell Recommendations:")
-for rec in sell_recommendations:
+# Display recommendations
+print("\nRecommendations:")
+for rec in recommendations:
     print(f"{rec[0]}: {rec[1]} {rec[2]} shares ({rec[3]})")
-
-print("\nBuy Recommendations:")
-for rec in buy_recommendations:
-    print(f"{rec[0]}: {rec[1]} ({rec[2]})")
-

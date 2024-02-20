@@ -2,36 +2,43 @@ import yfinance as yf
 import numpy as np
 import pandas as pd
 
-def fetch_sp500_symbols():
+def fetch_sp500_symbols_and_sectors():
     url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
     sp500_table = pd.read_html(url, attrs={'id': 'constituents'})[0]
-    symbols = sp500_table['Symbol'].tolist()
-    return symbols
+    symbols_sectors = sp500_table[['Symbol', 'GICS Sector']]
+    return symbols_sectors.set_index('Symbol')
 
-# Fetch S&P 500 symbols
-sp500_symbols = fetch_sp500_symbols()
+# Fetch S&P 500 symbols and their sectors
+sp500_symbols_sectors = fetch_sp500_symbols_and_sectors()
 
-# Fetch historical data for S&P 500 Index and all S&P 500 stocks
+# Fetch historical data for S&P 500 Index
 index_symbol = '^GSPC'
 sp500_index_data = yf.download(index_symbol, start="2023-01-01", end="2023-12-31")['Close']
 
-all_data = yf.download(sp500_symbols, start="2023-01-01", end="2023-12-31")['Close']
-
-# Calculate daily returns for all stocks and the S&P 500
-daily_returns_all = all_data.pct_change()
+# Calculate daily returns for the S&P 500
 daily_returns_sp500 = sp500_index_data.pct_change()
+
+# Fetch historical data for all S&P 500 stocks
+all_symbols = sp500_symbols_sectors.index.tolist()
+all_data = yf.download(all_symbols, start="2023-01-01", end="2023-12-31")['Close']
+
+# Calculate daily returns for all stocks
+daily_returns_all = all_data.pct_change()
 
 # Calculate correlations with S&P 500
 correlations = daily_returns_all.apply(lambda x: x.corr(daily_returns_sp500))
 
 # Select top 20 stocks with highest correlation to S&P 500
-top_20_stocks = correlations.nlargest(20).index.tolist()
+top_20_stocks = correlations.nlargest(50).index.tolist()
 
 # Fetch historical data for top 20 correlated stocks
-data = yf.download(top_20_stocks, start="2023-01-01", end="2023-12-31")['Close']
+data = all_data[top_20_stocks]
+
+# Get GICS Sector for the selected stocks
+selected_stocks_sectors = sp500_symbols_sectors.loc[top_20_stocks]
 
 # Assuming equal weights for simplicity
-initial_weights = np.array([1/20] * 20)
+initial_weights = np.array([1/50] * 50)
 
 # Total investment amount
 total_investment = 10000
@@ -59,7 +66,8 @@ final_weights /= final_weights.sum()
 latest_prices = data.iloc[-1]
 shares_to_buy = total_investment * final_weights / latest_prices
 
-# Print investment plan
+# Print investment plan with GICS Sector
 print("\nInvestment Plan:")
 for stock, shares in zip(top_20_stocks, shares_to_buy):
-    print(f"{stock}: Buy {shares:.2f} shares")
+    sector = selected_stocks_sectors.loc[stock, 'GICS Sector']
+    print(f"{stock} ({sector}): Buy {shares:.2f} shares")

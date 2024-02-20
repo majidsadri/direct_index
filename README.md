@@ -39,7 +39,22 @@ To use the tool, execute the script with Python. You can modify the `stocks` lis
     python investment_planning_tool.py
     ```
 
+
 The script will output an investment plan, detailing the number of shares to buy for each stock based on the current investment strategy and market data.
+
+## Correlation Calculation with S&P 500
+
+This project includes functionality to calculate the correlation between individual S&P 500 stocks and the S&P 500 index itself. The goal is to identify stocks that closely mimic the trends of the S&P 500, enabling the creation of a portfolio that reflects the overall market performance.
+
+### Overview
+
+The process consists of several key steps:
+
+- **Data Collection**: Utilizes the `yfinance` library to fetch historical stock prices for the S&P 500 index and individual S&P 500 stocks, focusing on adjusted close prices over a specific period.
+- **Correlation Analysis**: Calculates the Pearson correlation coefficient between the daily returns of individual stocks and the S&P 500, identifying stocks whose movements are most similar to the index.
+- **Stock Selection**: Selects the top 10 stocks with the highest correlation to the S&P 500 index for portfolio construction, aiming to mirror the index's performance as closely as possible.
+- **Implementation Details**: Includes fetching data, calculating daily returns, analyzing correlations, and selecting top correlated stocks. The code is designed with error handling to manage potential issues during data fetching.
+
 
 ## Customization
 

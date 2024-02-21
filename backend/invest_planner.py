@@ -66,8 +66,19 @@ final_weights /= final_weights.sum()
 latest_prices = data.iloc[-1]
 shares_to_buy = total_investment * final_weights / latest_prices
 
-# Print investment plan with GICS Sector
-print("\nInvestment Plan:")
+
+# Define the ANSI escape codes for yellow and reset
+yellow = '\033[1;32m'
+reset = '\033[0m'
+
+# Print the investment plan header in yellow
+print("\n")
+print(f"{yellow}Investment Plan for a Total Investment of $10000:{reset}")
+print("Based on S&P 500 correlation and adjusted for risk tolerance, the following is the recommended purchase plan:")
+print("\n")
 for stock, shares in zip(top_20_stocks, shares_to_buy):
     sector = selected_stocks_sectors.loc[stock, 'GICS Sector']
-    print(f"{stock} ({sector}): Buy {shares:.2f} shares")
+    # Print stock symbols in yellow
+    print(f"{yellow}{stock}{reset} ({sector}): Buy {shares:.2f} shares")
+
+print("\nThis plan aims to closely mirror the S&P 500 trends while considering the individual stock volatilities to optimize the risk-reward ratio of the investment.")

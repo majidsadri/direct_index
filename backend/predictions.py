@@ -6,8 +6,8 @@ import pandas as pd
 import numpy as np
 
 # Fetch historical stock data
-ticker = "AAPL"
-data = yf.download(ticker, start="2020-01-01", end="2023-01-01")
+ticker = "NVDA"
+data = yf.download(ticker, start="2023-01-01", end="2024-02-20")
 
 # Prepare the data
 data = data[['Close']].copy()  # Make a copy to avoid SettingWithCopyWarning
@@ -35,6 +35,6 @@ mse = mean_squared_error(y_test, predictions)
 print(f"Mean Squared Error: {mse}")
 
 # Predict the next day's closing price (this is a placeholder; adjust as needed)
-next_day = np.array([[32, 2023]])  # Replace with actual future dates
+next_day = np.array([[1, 2024]])  # Replace with actual future dates
 predicted_price = model.predict(next_day)
 print(f"Predicted next day's price: ${predicted_price[0]:.2f}")
